@@ -106,11 +106,23 @@ impl HeaderTable {
         self.truncate_table();
     }
 
-    pub fn lookup(&self, compare: &(Vec<u8>, Vec<u8>)) -> Option<usize> {
+    pub fn lookup_value(&self, compare: &(Vec<u8>, Vec<u8>)) -> Option<usize> {
         for i in 0..self.table.len() {
             let entry = &self.table[i];
 
             if entry.0 == compare.0 && entry.1 == compare.1 {
+                return Some(i + 1);
+            }
+        }
+
+        return None;
+    }
+
+    pub fn lookup_name(&self, compare: &Vec<u8>) -> Option<usize> {
+        for i in 0..self.table.len() {
+            let entry = &self.table[i];
+
+            if entry.0 == *compare {
                 return Some(i + 1);
             }
         }
@@ -193,19 +205,25 @@ mod tests {
         table.insert((vec![0, 1, 2], vec![3, 4, 5]));
 
         // Unwrap will throw if this isn't in the table
-        let lookup_result =
-            table.lookup(&(vec![0, 1, 2], vec![3, 4, 5])).unwrap();
+        let value_result =
+            table.lookup_value(&(vec![0, 1, 2], vec![3, 4, 5])).unwrap();
 
         // The value is at the right index
-        assert_eq!(lookup_result, 1);
+        assert_eq!(value_result, 1);
+
+        // Lookup just the 'name' portion.
+        let name_result = table.lookup_name(&vec![0, 1, 2]).unwrap();
+
+        // The name is at the right index
+        assert_eq!(name_result, 1);
 
         // A value not in the table returns none
-        assert_eq!(table.lookup(&(vec![0], vec![1])), None);
+        assert_eq!(table.lookup_value(&(vec![0], vec![1])), None);
     }
 
     #[test]
     fn static_table_is_correct() {
-        let mut table = HeaderTable::new_static_table();
+        let table = HeaderTable::new_static_table();
 
         let &(ref header1, ref value1) = &table[2];
         let &(ref header2, ref value2) = &table[61];
@@ -233,7 +251,7 @@ mod tests {
         assert_eq!(table[1], (vec![6, 7, 8], vec![9, 10, 11]));
 
         // The old value isn't in the table any more
-        assert_eq!(table.lookup(&(vec![0, 1, 2], vec![3, 4, 5])), None);
+        assert_eq!(table.lookup_value(&(vec![0, 1, 2], vec![3, 4, 5])), None);
     }
 
     #[test]
@@ -252,6 +270,6 @@ mod tests {
         assert_eq!(table.num_entries(), 1);
 
         // The old value isn't in the table any more
-        assert_eq!(table.lookup(&(vec![0, 1, 2], vec![3, 4, 5])), None);
+        assert_eq!(table.lookup_value(&(vec![0, 1, 2], vec![3, 4, 5])), None);
     }
 }
